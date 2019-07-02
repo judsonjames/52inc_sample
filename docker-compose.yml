@@ -1,0 +1,72 @@
+#******************************************************************************
+# Author:  Judson James
+# Purpose: Docker Compose file for Django-React Combo Application
+#******************************************************************************
+
+version: "3.6"
+
+services:
+  #****************************************************************************
+  # PostgreSQL Configurations for Django REST API
+  postgres_server:
+    container_name: 52inc_postgres
+    image: postgres:10.5-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgressql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${PASSWORD}
+      - POSTGRES_DB=${DB}
+  #****************************************************************************
+  # Django Configuration (mostly to set this container as a RESTful API)
+  django:
+    container_name: 52inc_django
+    build:
+      context: ./django_backend
+    command: gunicorn django_backend.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./django_backend/:/usr/src/django_backend/
+      - static_volume:/usr/src/django_backend/static
+    ports:
+      - "8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=${DB}
+      - SQL_USER=postgres
+      # - SQL_USER=${USER}
+      - SQL_PASSWORD=${PASSWORD}
+      - SQL_HOST=postgres_server
+      - SQL_PORT=5432
+      - DATABASE=postgres
+    depends_on:
+      - postgres_server  
+  #****************************************************************************
+  # React Node.js Frontend Application (will rely on Django Container)
+  react:
+    container_name: 52inc_react
+    build: ./react_frontend
+    ports:
+      - "3000"
+    volumes:
+      - ./react_frontend:/app
+    depends_on:
+      - django
+  #****************************************************************************
+  # Nginx Configurations to make the React and Django containers visible
+  nginx:
+    container_name: 52inc_nginx
+    build: 
+      context: ./nginx
+    volumes:
+      - static_volume:/usr/src/django_backend/static
+    ports:
+      - "5252:80"
+    depends_on:
+      - django
+      - react
+volumes:
+  postgres_data:
+  static_volume:
