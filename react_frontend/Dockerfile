@@ -18,7 +18,7 @@ RUN npm install serve --silent
 RUN npm install react-scripts@3.0.1 -g --silent
 
 # start app
-# CMD ["npm", "run"]
+CMD ["npm", "start"]
 
 # This caused the app to 404, will experiment
-CMD ["serve", "-s", "build", "-l", "3000"]
+# CMD ["serve", "-s", "build", "-l", "3000"]
